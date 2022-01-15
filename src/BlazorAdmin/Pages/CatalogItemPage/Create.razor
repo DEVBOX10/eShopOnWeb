@@ -80,23 +80,7 @@
                                             <InputNumber @bind-Value="_item.Price" class="form-control" />
                                             <ValidationMessage For="(() => _item.Price)" />
                                         </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="control-label col-md-6">@_item.PictureName</label>
-                                        <div class="row">
-                                            <div class="col-md-6 esh-form-information">
-                                                <BlazorInputFile.InputFile OnChange="AddFile"/>                                                
-                                            </div>
-                                            <div class="col-md-6 esh-form-information">
-                                                @if (HasPicture)
-                                                {
-                                                    <button type="button" class="btn btn-danger" @onclick="RemoveImage">Remove Picture</button>
-                                                }
-                                            </div>
-                                            <span class="col-md-12" style="color: red;"> @_badFileMessage </span>
-                                        </div>
-                                    </div>
+                                    </div>                                   
                                 </div>
                             </div>
                         </div>
@@ -122,13 +106,13 @@
 
 @code {
 
-    [Parameter]
-    public IEnumerable<CatalogBrand> Brands { get; set; }
-    [Parameter]
-    public IEnumerable<CatalogType> Types { get; set; }
+        [Parameter]
+        public IEnumerable<CatalogBrand> Brands { get; set; }
+        [Parameter]
+        public IEnumerable<CatalogType> Types { get; set; }
 
-    [Parameter]
-    public EventCallback<string> OnSaveClick { get; set; }
+        [Parameter]
+        public EventCallback<string> OnSaveClick { get; set; }
 
     private string LoadPicture => string.IsNullOrEmpty(_item.PictureBase64) ? string.Empty : $"data:image/png;base64, {_item.PictureBase64}";
     private bool HasPicture => !string.IsNullOrEmpty(_item.PictureBase64);
@@ -140,13 +124,17 @@
 
     private async Task CreateClick()
     {
-        await CatalogItemService.Create(_item);
-        await OnSaveClick.InvokeAsync(null);
-        await Close();
+        var result = await CatalogItemService.Create(_item);
+        if (result != null)
+        {
+            await OnSaveClick.InvokeAsync(null);
+            await Close();
+        }
     }
 
     public async Task Open()
     {
+    
         Logger.LogInformation("Now loading... /Catalog/Create");
 
         await new Css(JSRuntime).HideBodyOverflow();
@@ -170,27 +158,5 @@
         _modalDisplay = "none";
         _modalClass = "";
         _showCreateModal = false;
-    }
-
-    private async Task AddFile(IFileListEntry[] files)
-    {
-        _badFileMessage = string.Empty;
-
-        var file = files.FirstOrDefault();
-        _item.PictureName = file?.Name;
-        _item.PictureBase64 = await CatalogItem.DataToBase64(file);
-
-        _badFileMessage = CatalogItem.IsValidImage(_item.PictureName, _item.PictureBase64);
-        if (!string.IsNullOrEmpty(_badFileMessage))
-        {
-            _item.PictureName = null;
-            _item.PictureBase64 = null;
-        }
-    }
-
-    private void RemoveImage()
-    {
-        _item.PictureName = null;
-        _item.PictureBase64 = null;
     }
 }
